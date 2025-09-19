@@ -1,0 +1,31 @@
+// Create an order (guest-friendly)
+app.post("/create-order", (req, res) => {
+  const { customer_id, items } = req.body;
+
+  // If no customer_id provided, treat as guest
+  const customerId = customer_id || null; // or 0 if you prefer
+
+  db.query(
+    "INSERT INTO Orders (customer_id) VALUES (?)",
+    [customerId],
+    (err, result) => {
+      if (err) return res.status(500).send(err);
+      const orderId = result.insertId;
+
+      const values = items.map((item) => [
+        orderId,
+        item.product_id,
+        item.quantity,
+      ]);
+
+      db.query(
+        "INSERT INTO OrderItems (order_id, product_id, quantity) VALUES ?",
+        [values],
+        (err) => {
+          if (err) return res.status(500).send(err);
+          res.send(`✅ Order #${orderId} created`);
+        }
+      );
+    }
+  );
+});
